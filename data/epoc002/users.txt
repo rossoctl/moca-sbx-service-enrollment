@@ -3,3 +3,13 @@ oidc:aslom@us.ibm.com
 oidc:dettori@us.ibm.com
 oidc:gheorghe@us.ibm.com
 oidc:snible@us.ibm.com
+oidc:Maia.Iyer@ibm.com
+oidc:evaline.ju@ibm.com
+oidc:kna@us.ibm.com
+oidc:rong@us.ibm.com
+oidc:cwiklik@us.ibm.com
+oidc:haih@us.ibm.com
+oidc:mrsabath@us.ibm.com
+oidc:gloire@ibm.com
+oidc:jcadden@ibm.com
+oidc:steinder@us.ibm.com

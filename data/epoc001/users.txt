@@ -6,3 +6,13 @@ github:esnible
 github:pdettori
 github:rippofunk
 github:evaline-ju
+github:rubambiza
+github:cwklik
+github:huang195
+github:ingpaolodettori-dev
+github:jimcadden
+github:kellyaa
+github:mrsabath
+github:msteinder
+github:sahilsuneja1
+github:webchang
