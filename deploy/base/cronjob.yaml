@@ -1,0 +1,94 @@
+# The enrollment sync CronJob: one per cluster, in its moca-sbx namespace. Overlays
+# (deploy/epoc001, deploy/epoc002) set SITE and CONTROL_PLANE_URL.
+#
+# The installer token comes from the deployment's own moca-mu1 Secret (the key
+# setup.sh generates and keeps). The repository is public, so the sync clones it
+# anonymously; if it ever goes private, create a Secret with a read PAT and wire
+# it to REPO_TOKEN below:
+#
+#   kubectl -n moca-sbx create secret generic enrollment-sync \
+#     --from-literal=repo-token='github_pat_...'
+#
+# When the API Route's certificate is not publicly trusted, add the CA:
+#   --from-file=cp-ca.crt=/path/to/api-ca.crt  (and mount it, CP_CA_FILE below).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: enrollment-sync
+spec:
+  # Often enough that a commit lands within the hour, rarely enough to stay far
+  # under api.github.com's unauthenticated quota (60 req/h per IP; one request per
+  # github login in the roster).
+  schedule: '*/15 * * * *'
+  # Two reconciliations must never race: the diff is computed from a snapshot.
+  concurrencyPolicy: Forbid
+  # A failed run retries soon; the next schedule would do the same work anyway.
+  startingDeadlineSeconds: 30
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 6
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app: enrollment-sync
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: sync
+              image: REPLACE_ME/enrollment-sync:latest
+              env:
+                - name: SITE
+                  value: REPLACE_ME
+                - name: ENROLLMENT_REPO_URL
+                  value: https://github.com/rossoctl/moca-sbx-service-enrollment
+                - name: CONTROL_PLANE_URL
+                  value: REPLACE_ME
+                # fail closed: a clone failure aborts the run before anything is touched.
+                # Optional: the repository is public; set this only if it goes private.
+                - name: REPO_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: enrollment-sync
+                      key: repo-token
+                      optional: true
+                # the deployment's own installer bearer (SH_INSTALLER_TOKEN in moca-mu1)
+                - name: SH_INSTALLER_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: moca-mu1
+                      key: SH_INSTALLER_TOKEN
+                # optional: a github token, raising api.github.com's rate limit
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: enrollment-sync
+                      key: github-token
+                      optional: true
+                # optional: a PEM CA for the API Route, when its cert is not public
+                - name: CP_CA_FILE
+                  value: ''
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ['ALL']
+                seccompProfile:
+                  type: RuntimeDefault
+              # git clones into a temp dir; the root filesystem is read-only
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 64Mi

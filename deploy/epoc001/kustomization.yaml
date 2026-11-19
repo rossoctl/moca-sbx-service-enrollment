@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+namespace: moca-sbx
+patches:
+  - patch: |
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/env/0/value
+        value: epoc001
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/env/2/value
+        value: https://sbx-api-moca-sbx.apps.epoc001.ete14.res.ibm.com
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/image
+        value: icr.io/vopo/moca-sbx-enrollment-sync:latest
+    target:
+      kind: CronJob
+      name: enrollment-sync
