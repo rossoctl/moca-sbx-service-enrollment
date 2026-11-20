@@ -1,1 +1,3 @@
-enrollment-sync
+# the built binary at the repo root (make build) — anchored so it cannot also
+# ignore cmd/enrollment-sync/, the source of the same name
+/enrollment-sync
